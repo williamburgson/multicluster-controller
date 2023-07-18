@@ -47,13 +47,21 @@ kubectl apply -f examples/placement
 
 ```bash
 # creates argo namespace in all managed clusters
-clusteradm create work argo-namespace -f examples/work/namespace.yaml --placement argo-workspace/allclusters
+clusteradm create work argo-namespace -f examples/work/namespace.yaml --placement argo-workspace/allclusters --overwrite=true
 # install argo in managed al clusters
-clusteradm create work argo -f examples/work/argo.yaml --placement argo-workspace/allclusters
+clusteradm create work argo -f examples/work/argo.yaml --placement argo-workspace/allclusters --overwrite=true
+# grant the necessary rbacs
+clusteradm create work rbac -f examples/work/rbac.yaml --placement argo-workspace/allclusters --overwrite=true
 # create argo resources using different placement strategies
-clusteradm create work example-workflowtemplate -f examples/work/workflowtemplate.yaml --placement argo-workspace/allclusters
-clusteradm create work example-workflow -f examples/work/workflow.yaml --placement argo-workspace/singlecluster
+clusteradm create work example-workflowtemplate -f examples/work/workflowtemplate.yaml --placement argo-workspace/allclusters --overwrite=true
+clusteradm create work example-workflow -f examples/work/workflow.yaml --placement argo-workspace/singlecluster --overwrite=true
 ```
+
+> Screwed up something and want to start over? Delete all the manifestwork with
+>
+> ```bash
+> kuebctl get manifestwork -A -ojson --context kind-hub | jq -r '.items[].metadata | [.namespace, .name] | join(" ")' | awk '{ printf "kubectl delete manifestwork -n %s %s --context kind-hub\n", $1, $2}' | sh
+> ```
 
 - A work can be created using the `ManifestWork` manifest, but note resources created this way need to select the destination cluster manually (by specifying the cluster namespace as the manifestwork namespace)
 - ATM, from the documentation available, it seems that `clusteradm` cli has to be used to submit a work with a placement strategy
@@ -63,8 +71,10 @@ clusteradm create work example-workflow -f examples/work/workflow.yaml --placeme
 - ManifestWork does not allow [generateName](https://github.com/open-cluster-management-io/ocm/blob/main/pkg/work/webhook/common/validator.go#L52-L59)
 - Placement has to be specified as `clusteradm` flag (`--placement <name>`), ideally it should a field in the ManifestWork
 - Each submission of a Workflow (or any ephemeral run-to-completion batch jobs) is gonna need a new ManifestWork, doubling the CRs created
+- [TODO] RBACs for dispatching Workflows to spoke clusters from hub
 - [TODO] The full Workflow status is not propagated back to the hub cluster, need to investigate
-- [TODO] Will update to the ManifestWork trigger a re-run of the Workflow?
+- [TODO] Will update to the ManifestWork trigger a re-run of the Workflow? (mutable vs immutable fields, e.g. name vs label)
+- [TODO] How to explicitly trigger a re-run of the Workflow? Will it follow the same placement decision?
 
 ## Podman troubleshooting
 

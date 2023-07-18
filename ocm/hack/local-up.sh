@@ -27,7 +27,8 @@ echo "Join cluster2 to hub\n"
 $(echo ${joincmd} --force-internal-endpoint-lookup --wait --context ${c2ctx} | sed "s/<cluster_name>/$c2/g")
 
 echo "Accept join of cluster1 and cluster2"
-clusteradm accept --context ${hubctx} --clusters ${c1},${c2} --wait
+clusteradm accept --context ${hubctx} --clusters ${c1} --wait
+clusteradm accept --context ${hubctx} --clusters ${c2} --wait
 
 kubectl label managedcluster ${c1} ocm.io/platform=argo
 kubectl label managedcluster ${c2} ocm.io/platform=argo
